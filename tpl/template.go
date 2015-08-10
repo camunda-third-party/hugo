@@ -32,6 +32,7 @@ import (
 
 var localTemplates *template.Template
 var tmpl Template
+var cachedPartials map[string]template.HTML
 
 type Template interface {
 	ExecuteTemplate(wr io.Writer, name string, data interface{}) error
@@ -81,6 +82,7 @@ func New() Template {
 	}
 
 	localTemplates = &templates.Template
+	cachedPartials = make(map[string]template.HTML)
 
 	for k, v := range funcMap {
 		amber.FuncMap[k] = v
@@ -102,6 +104,14 @@ func Partial(name string, context_list ...interface{}) template.HTML {
 		context = context_list[0]
 	}
 	return ExecuteTemplateToHTML(context, "partials/"+name, "theme/partials/"+name)
+}
+
+func CachedPartial(name string, context_list ...interface{}) template.HTML {
+	if _, found := cachedPartials[name]; !found {
+		cachedPartials[name] = Partial(name, context_list...)
+	}
+
+	return cachedPartials[name]
 }
 
 func ExecuteTemplate(context interface{}, buffer *bytes.Buffer, layouts ...string) {
