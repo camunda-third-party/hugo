@@ -31,6 +31,8 @@ import (
 
 var localTemplates *template.Template
 var tmpl Template
+var cachedPartials map[string]template.HTML
+
 
 // TODO(bep) an interface with hundreds of methods ... remove it.
 // And unexport most of these methods.
@@ -92,6 +94,7 @@ func New() Template {
 	}
 
 	localTemplates = &templates.Template
+    cachedPartials = make(map[string]template.HTML)
 
 	for k, v := range funcMap {
 		amber.FuncMap[k] = v
@@ -113,6 +116,14 @@ func partial(name string, contextList ...interface{}) template.HTML {
 		context = contextList[0]
 	}
 	return ExecuteTemplateToHTML(context, "partials/"+name, "theme/partials/"+name)
+}
+
+func cachedPartial(name string, context_list ...interface{}) template.HTML {
+    if _, found := cachedPartials[name]; !found {
+        cachedPartials[name] = partial(name, context_list...)
+    }
+
+    return cachedPartials[name]
 }
 
 func executeTemplate(context interface{}, w io.Writer, layouts ...string) {
